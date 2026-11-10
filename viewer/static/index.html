@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101817">
+  <title>Touchline · Possession viewer</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="masthead">
+    <a class="brand" href="/" aria-label="Touchline home"><span class="brand-icon">⌗</span> TOUCHLINE <span class="brand-divider"></span><span class="brand-sub">MODEL REVIEW</span></a>
+    <span class="local-badge"><i></i> LOCAL WORKSPACE</span>
+  </header>
+  <main>
+    <section class="page-heading">
+      <div><p class="eyebrow">MORE THAN A HACK / TACTICAL LAB</p><h1>Every frame. Every possession.</h1><p class="subtitle">Barcelona <span>vs</span> Athletic Club <span class="separator">/</span> Tactical camera</p></div>
+      <div class="match-meta"><strong>25 <span>FPS</span></strong><span id="frame-count">199,319 frames</span></div>
+    </section>
+    <div id="notice" class="notice" role="status" hidden></div>
+    <div class="workspace">
+      <section class="watch-column" aria-label="Video and model comparison">
+        <div class="video-panel panel">
+          <div class="panel-heading"><span><i class="live-dot"></i> TACTICAL FEED</span><span id="sync-status">Loading video…</span></div>
+          <div class="video-stage"><video id="video" preload="metadata" playsinline aria-label="Tactical match video"></video><div class="video-tag">BAR — ATH <span>TACTICAL</span></div><button id="stage-play" class="stage-play" aria-label="Play video">▶</button><div id="video-error" class="video-error" hidden></div></div>
+          <div class="transport">
+            <div class="seek-line"><span id="elapsed">00:00:00</span><input id="seek" type="range" min="0" max="199318" value="0" step="1" aria-label="Seek video by frame"><span id="duration">02:12:52</span></div>
+            <div class="transport-buttons"><div class="button-group"><button id="play" class="play-button" title="Play / pause (Space)" aria-label="Play video">▶</button><button id="back-ten" title="Back 10 seconds (Left arrow)">−10s</button><button id="forward-ten" title="Forward 10 seconds (Right arrow)">+10s</button><span class="control-divider"></span><button id="prev-frame" title="Previous frame (comma)" aria-label="Previous frame">❮│</button><button id="next-frame" title="Next frame (period)" aria-label="Next frame">│❯</button></div><div class="button-group"><label class="sr-only" for="speed">Playback speed</label><select id="speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1× speed</option><option value="1.5">1.5×</option><option value="2">2×</option></select><button id="fullscreen" title="Fullscreen video" aria-label="Fullscreen video">⛶</button></div></div>
+          </div>
+          <div class="jump-bar"><span class="muted">JUMP TO</span><button id="first-half">1st half ↗</button><button id="second-half">2nd half ↗</button><form id="frame-form"><label for="frame-input">Frame</label><input id="frame-input" type="number" min="0" max="199318" value="0" required><button type="submit" aria-label="Go to frame">→</button></form></div>
+        </div>
+        <section class="models-panel panel">
+          <div class="section-heading"><div><p class="eyebrow">SIDE BY SIDE</p><h2>Model comparison <span id="model-count" class="count">0</span></h2></div><button id="upload" class="accent-button">＋ Add CSV</button><input id="file-input" type="file" accept=".csv,text/csv" multiple hidden></div>
+          <div class="model-loader"><label for="repo-model">From evaluation/results</label><div><select id="repo-model" aria-label="Repository prediction file"></select><button id="add-repo">Add model</button><button id="refresh" title="Refresh available repository files" aria-label="Refresh model files">↻</button></div></div>
+          <div class="comparison-toolbar"><span id="agreement">Load predictions to compare</span><div><button id="prev-diff" disabled title="Previous disagreement">←</button><span>Disagreement</span><button id="next-diff" disabled title="Next disagreement">→</button></div></div>
+          <div id="model-list"></div>
+          <div class="timeline-axis"><span>00:00</span><span>FULL MATCH · CLICK A LANE TO SEEK</span><span id="timeline-end">132:52</span></div>
+          <div class="legend"><span><i class="swatch home"></i>H · Barcelona</span><span><i class="swatch away"></i>A · Athletic</span><span><i class="swatch dead"></i>D · Dead ball</span><span><i class="swatch abstain"></i>X · Abstained</span></div>
+        </section>
+        <p class="keyboard-hint"><kbd>Space</kbd> play / pause <kbd>←</kbd><kbd>→</kbd> skip 10s <kbd>,</kbd><kbd>.</kbd> step one frame</p>
+      </section>
+      <aside class="prediction-panel panel" aria-label="Synchronized frame predictions">
+        <div class="panel-heading"><span><i class="live-dot"></i> FRAME INSPECTOR</span><span id="inspector-state">PAUSED</span></div>
+        <div class="current-prediction"><div class="current-top"><p class="eyebrow">CURRENT FRAME</p><span id="frame-number">#000000</span></div><label for="primary-model">Focus model</label><select id="primary-model" aria-label="Focus model"></select><div id="hero" class="hero" data-label="X"><span id="hero-code" class="hero-code">—</span><div><h2 id="hero-name">Loading…</h2><p id="hero-detail">Reading model predictions</p></div></div><div class="frame-metadata"><span id="frame-time">00:00:00.000</span><span>0-based video frame</span></div></div>
+        <div class="history-heading"><h3>Previous 9 frames</h3><span>NEWEST FIRST ↓</span></div>
+        <div class="history-scroll"><table id="history"><thead></thead><tbody></tbody></table></div>
+        <div class="inspector-foot"><i class="live-dot"></i><span>Predictions follow the video frame.<br>Seek anywhere to inspect that moment.</span></div>
+      </aside>
+    </div>
+    <footer><span>TOUCHLINE <span class="muted">/ Possession analysis</span></span><span>BAR-ATH · H / A / D / X</span></footer>
+  </main>
+  <script type="module" src="/app.mjs"></script>
+</body>
+</html>

@@ -94,6 +94,20 @@ It takes two seconds and it is the single most common way a good entry scores no
 
 ---
 
+## Watch predictions with the tactical video
+
+```bash
+python viewer/server.py
+```
+
+Open **http://127.0.0.1:8765** to watch the tactical video with synchronized possession
+predictions. The viewer loads `evaluation/results/my_first.csv` when available, shows the
+current prediction and nine previous frames, and lets you add model CSVs for comparison.
+It supports seeking, frame stepping, and jumping to disagreements. No extra dependencies.
+See [viewer/README.md](viewer/README.md) for controls and setup.
+
+---
+
 ## Getting the data
 
 The match assets are released to enrolled participants who have accepted the terms of use.
@@ -124,6 +138,9 @@ Full description of every asset and how the frames line up: **[DATA.md](DATA.md)
 
 ## What is in this repository
 
+See [CHANGELOG.md](CHANGELOG.md) for implemented changes. Contributors should add a concise
+entry when changing the repo.
+
 ```
 games.py                    per-match constants, asset paths and the frame alignment
 evaluation/
@@ -141,6 +158,7 @@ starter/
   01_smart_tagging.ipynb    guided tour of the tactical tagging
   02_tracking_atd.ipynb     guided tour of the tracking data, with plots
   03_first_submission.ipynb data in, scored submission out — start here
+viewer/                     local tactical video and model prediction comparison UI
 data/                       unpack the downloaded match assets here. Empty in a fresh clone
 ```
 
