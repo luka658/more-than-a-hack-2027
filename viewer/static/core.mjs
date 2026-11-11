@@ -62,3 +62,28 @@ export function trackingFrame(chunk, frame) {
   const row = chunk?.frames[frame - chunk.start];
   return row?.frame === frame ? row : null;
 }
+
+export function parseBallHeight(text, frameCount) {
+  const lines = text.replace(/^\uFEFF/, '').trim().split(/\r?\n/);
+  const cells = line => line.split(',').map(value => value.trim().replace(/^"(.*)"$/, '$1').trim());
+  if (cells(lines[0]).map(value => value.toLowerCase()).join(',') !== 'frame,z') {
+    throw new Error('Expected frame,z CSV: zero-based video frame and height in metres.');
+  }
+  const values = new Map();
+  let previous = -1, maximum = 0;
+  for (let index = 1; index < lines.length; index++) {
+    const row = cells(lines[index]);
+    const frame = Number(row[0]);
+    if (row.length !== 2 || !/^\d+$/.test(row[0]) || !Number.isSafeInteger(frame) || frame <= previous || frame >= frameCount) {
+      throw new Error(`Height row ${index + 1}: frames must be unique, increasing, and between 0 and ${frameCount - 1}.`);
+    }
+    previous = frame;
+    if (row[1] === '' || /^(nan|null)$/i.test(row[1])) continue;
+    const height = Number(row[1]);
+    if (!Number.isFinite(height) || height < 0) throw new Error(`Height row ${index + 1}: z must be a nonnegative height in metres.`);
+    values.set(frame, height);
+    maximum = Math.max(maximum, height);
+  }
+  if (!values.size) throw new Error('Height CSV has no finite height observations.');
+  return { values, maximum };
+}

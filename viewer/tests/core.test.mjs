@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { parsePredictions, frameAtTime, historyFrames, findDisagreement, activeEvents, trackingChunkStart, trackingFrame } from '../static/core.mjs';
+import { parsePredictions, frameAtTime, historyFrames, findDisagreement, activeEvents, trackingChunkStart, trackingFrame, parseBallHeight } from '../static/core.mjs';
 
 test('CSV accepts contract normalization, quoted cells, BOM and Windows newlines', () => {
   assert.deepEqual(parsePredictions('\uFEFF Frame , Label\r\n"0"," h "\r\n1,A\r\n2,D\r\n3,X\r\n', 4), ['H', 'A', 'D', 'X']);
@@ -64,4 +64,22 @@ test('tracking selection never returns stale frames across chunk boundaries or b
   assert.equal(trackingFrame(chunk, 502), null);
   assert.equal(trackingFrame(undefined, 0), null);
   assert.equal(trackingFrame({ start: 500, frames: [{ frame: 501 }] }, 500), null);
+});
+
+test('ball height keeps missing observations distinct from measured ground-level zero', () => {
+  const data = parseBallHeight('\uFEFFframe,z\r\n0,0\r\n2,3.5\r\n3,NaN\r\n4,\r\n', 5);
+  assert.equal(data.values.get(0), 0);
+  assert.equal(data.values.get(1), undefined);
+  assert.equal(data.values.get(2), 3.5);
+  assert.equal(data.values.get(3), undefined);
+  assert.equal(data.values.get(4), undefined);
+  assert.equal(data.maximum, 3.5);
+});
+
+test('ball height rejects ambiguous alignment and invalid heights', () => {
+  for (const source of ['frame,label\n0,1', 'frame,z\n0,-1', 'frame,z\n0,Infinity',
+    'frame,z\n0,abc', 'frame,z\n5,1', 'frame,z\n1,2\n1,3', 'frame,z\n2,1\n1,2',
+    'frame,z\n0,NaN', 'frame,z\n0,1,2']) {
+    assert.throws(() => parseBallHeight(source, 5));
+  }
 });

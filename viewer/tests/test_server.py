@@ -9,11 +9,20 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from server import Handler, ThreadingHTTPServer, byte_range
+from server import Handler, ThreadingHTTPServer, ViewerServer, byte_range
 from test_match_data import fixture
 
 
 class RangeTests(unittest.TestCase):
+    def test_second_viewer_cannot_silently_bind_the_same_port(self):
+        first = ViewerServer(("127.0.0.1", 0), Handler)
+        try:
+            with self.assertRaises(OSError):
+                second = ViewerServer(first.server_address, Handler)
+                second.server_close()
+        finally:
+            first.server_close()
+
     def test_range_forms(self):
         for header, expected in [("bytes=0-9", (0, 9)), ("bytes=90-", (90, 99)),
                                  ("bytes=-10", (90, 99)), ("bytes=90-999", (90, 99))]:
@@ -62,7 +71,7 @@ class HttpTests(unittest.TestCase):
         caught.exception.close()
 
     def test_synchronized_data_routes(self):
-        for path in ["/api/events", "/api/tracking/meta", "/api/tracking/chunk/0", "/api/tracking/chunk/500"]:
+        for path in ["/api/events", "/api/speeds", "/api/tracking/meta", "/api/tracking/chunk/0", "/api/tracking/chunk/500"]:
             with urlopen(self.url + path) as response:
                 self.assertEqual(response.status, 200)
                 data = json.load(response)

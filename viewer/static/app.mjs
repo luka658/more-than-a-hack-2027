@@ -4,7 +4,7 @@ import { createMatchDataView } from './match-data.mjs';
 const $ = id => document.getElementById(id);
 const video = $('video');
 const models = [];
-const matchData = createMatchDataView();
+const matchData = createMatchDataView({ onSeek: frame => seekFrame(frame, true) });
 let config, currentFrame = 0, primary = null, nextId = 0, historyRows = [], ready = false;
 let pendingFrame = null;
 
@@ -314,7 +314,7 @@ new ResizeObserver(() => models.forEach(drawTimeline)).observe($('model-list'));
 async function init() {
   try {
     config = await fetchConfig();
-    matchData.load(config.fps);
+    matchData.load(config.fps, config.frames);
     $('seek').max = $('frame-input').max = config.frames - 1;
     $('frame-count').textContent = `${config.frames.toLocaleString()} frames`;
     $('duration').textContent = timecode(config.frames / config.fps);

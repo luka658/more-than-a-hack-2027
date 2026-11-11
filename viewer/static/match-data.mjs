@@ -1,17 +1,22 @@
-import { activeEvents, LABELS, timecode, trackingChunkStart, trackingFrame } from './core.mjs';
+import { activeEvents, LABELS, timecode, trackingChunkStart, trackingFrame, parseBallHeight } from './core.mjs';
 
 const $ = id => document.getElementById(id);
 
 async function getJSON(url, signal) {
   const response = await fetch(url, { signal });
+  if (!response.headers.get('content-type')?.includes('application/json')) {
+    throw new Error(`Could not load ${url} (HTTP ${response.status}). Restart viewer/server.py and refresh the page.`);
+  }
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || `Could not load ${url}`);
   return data;
 }
 
-export function createMatchDataView() {
+export function createMatchDataView({ onSeek = () => {} } = {}) {
   let frame = 0, fps = 25, events = null, eventError = '', eventKey = '';
   let enabled = false, seeking = false, metadata = null, metaError = '', metaPromise = null;
+  let speedEnabled = false, timeline = null, timelineError = '', timelinePromise = null;
+  let totalFrames = 199319, heightData = null, heightName = '';
   const cache = new Map(), pending = new Map(), errors = new Map();
   const canvas = $('tracking-canvas');
   const ctx = canvas.getContext('2d');
@@ -106,16 +111,22 @@ export function createMatchDataView() {
       }
     }).finally(() => {
       if (pending.get(start) === controller) pending.delete(start);
-      if (enabled && !seeking && metadata && trackingChunkStart(frame, metadata.chunkSize) === start) renderTracking();
+      if ((enabled || speedEnabled) && !seeking && metadata && trackingChunkStart(frame, metadata.chunkSize) === start) renderTracking();
     });
   }
 
   function renderTracking() {
-    if (!enabled) return;
+    if (!enabled && !speedEnabled) return;
     $('tracking-frame').textContent = seeking ? 'SEEKING' : `#${String(frame).padStart(6, '0')}`;
     const start = metadata ? trackingChunkStart(frame, metadata.chunkSize) : 0;
     const row = !seeking && metadata ? trackingFrame(cache.get(start), frame) : null;
-    drawPitch(row);
+    if (enabled) drawPitch(row);
+    const status = seeking ? 'Seeking…' : metaError || errors.get(start) || 'Loading tracking…';
+    if (speedEnabled) {
+      for (const key of ['mean', 'median', 'total', 'min', 'max']) $('speed-' + key).textContent = row?.speed?.[key] == null ? '—' : row.speed[key].toFixed(2);
+      $('speed-unit').textContent = metadata?.speedUnit || 'source units';
+      $('speed-coverage').textContent = row?.speed ? `${row.speed.count} / ${row.players.length} slots with speed` : row ? 'Restart the viewer server to enable speed data.' : status;
+    }
     if (!row) {
       $('tracking-counts').textContent = 'H — · A —';
       $('tracking-status').textContent = seeking ? 'Seeking…' : metaError || errors.get(start) || (metadata ? 'Loading tracking…' : 'Reading ATD metadata…');
@@ -136,7 +147,7 @@ export function createMatchDataView() {
     enabled = $('tracking-toggle').checked;
     $('tracking-panel').hidden = !enabled;
     $('feed-layout').classList.toggle('with-tracking', enabled);
-    if (!enabled) {
+    if (!enabled && !speedEnabled) {
       for (const controller of pending.values()) controller.abort();
       pending.clear();
       return;
@@ -154,9 +165,120 @@ export function createMatchDataView() {
   $('tracking-ids').onchange = renderTracking;
   new ResizeObserver(() => { if (enabled) renderTracking(); }).observe(canvas);
 
+  function chartWindow() {
+    if ($('speed-window').value === 'match') return [0, totalFrames];
+    const span = 60 * fps;
+    const start = Math.max(0, Math.min(totalFrames - span, frame - span / 2));
+    return [start, Math.min(totalFrames, start + span)];
+  }
+
+  function drawSpeedCharts() {
+    if (!speedEnabled) return;
+    const [start, end] = chartWindow();
+    for (const [id, keys, colors] of [
+      ['speed-average-chart', ['max', 'min', 'mean', 'median'], ['#74c5a1', '#e49cc5', '#69a9ff', '#e6c170']],
+      ['speed-total-chart', ['total'], ['#c29bff']],
+    ]) {
+      const chart = $(id), context = chart.getContext('2d');
+      const width = Math.max(200, chart.clientWidth), height = 95, ratio = window.devicePixelRatio || 1;
+      chart.width = width * ratio; chart.height = height * ratio;
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      context.clearRect(0, 0, width, height);
+      const left = 34, right = width - 8, top = 10, bottom = 73;
+      const rows = timeline?.bins.filter(bin => bin.end > start && bin.start < end) || [];
+      const max = Math.max(1, ...rows.flatMap(row => keys.map(key => row[key] ?? 0))) * 1.1;
+      context.strokeStyle = '#354339'; context.lineWidth = 1;
+      for (const y of [top, bottom]) { context.beginPath(); context.moveTo(left, y); context.lineTo(right, y); context.stroke(); }
+      context.font = '9px monospace'; context.fillStyle = '#94a29b'; context.textAlign = 'left';
+      context.fillText(max.toFixed(1), 1, top + 3); context.fillText('0', 20, bottom + 3);
+      context.fillText(timecode(start / fps), left, 91);
+      context.textAlign = 'right'; context.fillText(timecode(end / fps), right, 91); context.textAlign = 'left';
+      keys.forEach((key, index) => {
+        context.strokeStyle = colors[index]; context.lineWidth = 1.5; context.beginPath();
+        let connected = false;
+        for (const row of rows) {
+          if (row[key] == null) { connected = false; continue; }
+          const x = left + (Math.min(end, Math.max(start, (row.start + row.end) / 2)) - start) / (end - start) * (right - left);
+          const y = bottom - row[key] / max * (bottom - top);
+          if (connected) context.lineTo(x, y); else context.moveTo(x, y);
+          connected = true;
+        }
+        context.stroke();
+      });
+      if (!seeking) {
+        const x = left + (frame - start) / (end - start) * (right - left);
+        context.strokeStyle = '#d4ed91'; context.beginPath(); context.moveTo(x, top); context.lineTo(x, bottom); context.stroke();
+      }
+    }
+    $('speed-chart-status').textContent = timeline ? '1 s averages · click a graph to seek · no observations = gap' : timelineError || 'Reading full-match speeds…';
+  }
+
+  function placeSpeedPanel() {
+    const right = $('speed-placement').value === 'right';
+    const slot = $(right ? 'speed-side-slot' : 'speed-inline-slot');
+    if ($('speed-panel').parentElement !== slot) slot.append($('speed-panel'));
+    $('speed-side-slot').hidden = !right || !speedEnabled;
+    document.querySelector('.workspace').classList.toggle('speed-on-right', right && speedEnabled);
+    drawSpeedCharts();
+  }
+  $('speed-placement').onchange = placeSpeedPanel;
+
+  $('speed-toggle').onchange = async () => {
+    speedEnabled = $('speed-toggle').checked;
+    $('speed-panel').hidden = !speedEnabled;
+    placeSpeedPanel();
+    await enableTracking();
+    if (!speedEnabled) return;
+    drawSpeedCharts();
+    if (!timeline && !timelinePromise) {
+      timelineError = '';
+      timelinePromise = getJSON('/api/speeds').then(data => { timeline = data; })
+        .catch(error => { timelineError = error.message; }).finally(() => { timelinePromise = null; drawSpeedCharts(); });
+    }
+  };
+  $('speed-window').onchange = drawSpeedCharts;
+  for (const id of ['speed-average-chart', 'speed-total-chart']) {
+    $(id).onclick = event => {
+      if (!timeline) return;
+      const rect = $(id).getBoundingClientRect(), [start, end] = chartWindow();
+      const fraction = Math.max(0, Math.min(1, (event.clientX - rect.left - 34) / (rect.width - 42)));
+      onSeek(Math.min(totalFrames - 1, Math.round(start + fraction * (end - start))));
+    };
+    new ResizeObserver(drawSpeedCharts).observe($(id));
+  }
+
+  function renderHeight() {
+    if (!$('height-toggle').checked) return;
+    const z = !seeking ? heightData?.values.get(frame) : undefined;
+    const maximum = Math.max(5, Math.ceil((heightData?.maximum || 0) / 5) * 5);
+    $('height-value').textContent = z === undefined ? '— m' : `${z.toFixed(2)} m`;
+    $('height-bar').classList.toggle('unknown', z === undefined);
+    $('height-fill').style.width = z === undefined ? '0%' : `${100 * z / maximum}%`;
+    $('height-scale').textContent = `0–${maximum} m`;
+    $('height-bar').setAttribute('aria-label', z === undefined ? 'Ball height unavailable' : `Ball height ${z.toFixed(2)} metres; scale zero to ${maximum} metres`);
+    $('height-source').textContent = seeking ? 'Seeking…' : !heightData ? 'ATD has x, y, speed; no z. Load a frame,z CSV in metres.' : z === undefined ? `${heightName} · no height for this frame` : heightName;
+    $('height-clear').hidden = !heightData;
+  }
+  $('height-toggle').onchange = () => { $('height-panel').hidden = !$('height-toggle').checked; renderHeight(); };
+  $('height-upload').onclick = () => $('height-file').click();
+  $('height-clear').onclick = () => { heightData = null; heightName = ''; $('height-error').textContent = ''; renderHeight(); };
+  $('height-file').onchange = async event => {
+    const file = event.target.files[0];
+    if (!file) return;
+    try {
+      if (file.size > 20 * 1024 * 1024) throw new Error('Height CSV exceeds 20 MB.');
+      heightData = parseBallHeight(await file.text(), totalFrames);
+      heightName = file.name;
+      $('height-error').textContent = '';
+      renderHeight();
+    } catch (error) { $('height-error').textContent = error.message; }
+    event.target.value = '';
+  };
+
   return {
-    async load(rate) {
+    async load(rate, frames) {
       fps = rate;
+      totalFrames = frames;
       try { events = (await getJSON('/api/events')).events; }
       catch (error) { eventError = `Tags unavailable: ${error.message}`; }
       renderEvents();
@@ -171,8 +293,8 @@ export function createMatchDataView() {
           }
         }
       }
-      renderEvents(); renderTracking();
+      renderEvents(); renderTracking(); drawSpeedCharts(); renderHeight();
     },
-    setSeeking(value) { seeking = value; renderEvents(); renderTracking(); },
+    setSeeking(value) { seeking = value; renderEvents(); renderTracking(); drawSpeedCharts(); renderHeight(); },
   };
 }

@@ -158,6 +158,7 @@ starter/
   01_smart_tagging.ipynb    guided tour of the tactical tagging
   02_tracking_atd.ipynb     guided tour of the tracking data, with plots
   03_first_submission.ipynb data in, scored submission out — start here
+  04_player_speed.ipynb      mean/median and total player-speed timelines
 viewer/                     local tactical video and model prediction comparison UI
 data/                       unpack the downloaded match assets here. Empty in a fresh clone
 ```

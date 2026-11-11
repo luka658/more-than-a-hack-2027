@@ -5,6 +5,7 @@ import json
 import mimetypes
 from pathlib import Path
 import re
+import socket
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import unquote, urlsplit
@@ -16,6 +17,17 @@ from match_data import MatchData
 
 STATIC = Path(__file__).resolve().parent / "static"
 RESULTS = ROOT / "evaluation" / "results"
+
+
+class ViewerServer(ThreadingHTTPServer):
+    # Windows SO_REUSEADDR can let a second process bind an occupied port,
+    # leaving the browser connected to an older server after an apparent restart.
+    allow_reuse_address = not hasattr(socket, "SO_EXCLUSIVEADDRUSE")
+
+    def server_bind(self):
+        if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
 
 
 def byte_range(header, size):
@@ -54,10 +66,12 @@ class Handler(BaseHTTPRequestHandler):
                 "models": files, "defaultModel": default,
                 "videoAvailable": self.server.video.is_file(),
             })
-        elif path == "/api/events" or path == "/api/tracking/meta" or path.startswith("/api/tracking/chunk/"):
+        elif path in {"/api/events", "/api/speeds", "/api/tracking/meta"} or path.startswith("/api/tracking/chunk/"):
             try:
                 if path == "/api/events":
                     data = {"events": self.server.match_data.events()}
+                elif path == "/api/speeds":
+                    data = self.server.match_data.speeds()
                 elif path == "/api/tracking/meta":
                     data = self.server.match_data.metadata()
                 else:
@@ -142,7 +156,10 @@ def main():
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--video", type=Path, default=Path(asset_paths()["video"]))
     args = parser.parse_args()
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
+    try:
+        server = ViewerServer(("127.0.0.1", args.port), Handler)
+    except OSError as error:
+        parser.exit(1, "Could not start viewer on port {}: {}. Stop the existing viewer or use --port.\n".format(args.port, error))
     server.video = args.video.resolve()
     server.match_data = MatchData()
     print("Possession viewer: http://127.0.0.1:{}".format(args.port), flush=True)

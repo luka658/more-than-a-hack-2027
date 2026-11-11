@@ -69,6 +69,46 @@ input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; }
 .event-chip strong { color: #e6eee5; font-size: 10px; font-weight: 550; }
 .event-chip>span { color: var(--event-color); font-size: 10px; }
 .workspace:fullscreen { background: var(--bg); padding: 16px; overflow-y: auto; align-content: start; }
+.speed-panel, .height-panel { padding: 10px 13px; border-top: 1px solid var(--border); background: #132019; }
+.speed-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 9px 16px; color: var(--muted); font-size: 10px; }
+.speed-title { color: var(--accent); letter-spacing: .5px; }
+.speed-title small { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; letter-spacing: 0; }
+.speed-summary strong { color: var(--text); font: 16px Consolas, monospace; margin-left: 4px; }
+.speed-controls { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; color: var(--muted); font-size: 10px; }
+.speed-controls select { min-height: 27px; padding: 3px 5px; font-size: 10px; }
+#speed-coverage { font-size: 9px; }
+.speed-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 9px; }
+.speed-charts>div { min-width: 0; }
+.speed-charts canvas { width: 100%; height: 95px; display: block; cursor: crosshair; }
+.chart-legend { display: flex; align-items: center; gap: 5px; font-size: 9px; color: var(--muted); }
+.chart-legend .swatch:not(:first-child) { margin-left: 9px; }
+.total-speed { background: #c29bff; }
+.max-speed { background: #74c5a1; }
+.min-speed { background: #e49cc5; }
+.review-column { min-width: 0; }
+.workspace.speed-on-right { grid-template-columns: minmax(0, 1fr) 350px; }
+#speed-side-slot { margin-bottom: 12px; }
+#speed-side-slot .speed-panel { border-top: 0; }
+#speed-side-slot .speed-charts { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+#speed-side-slot .speed-summary { gap: 6px 12px; }
+#speed-side-slot .speed-title, #speed-side-slot #speed-coverage { width: 100%; }
+#speed-side-slot .speed-title small { display: inline; margin-left: 5px; }
+#speed-side-slot .speed-summary strong { font-size: 14px; }
+.chart-legend { flex-wrap: wrap; }
+#speed-chart-status { font-size: 9px; color: var(--muted); margin: 5px 0 0; }
+.height-panel { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 10px; }
+.height-panel>strong { color: var(--accent); font-size: 10px; }
+#height-value { margin-left: 5px; color: var(--text); font: 15px Consolas, monospace; }
+.height-meter { width: 100px; flex-shrink: 0; }
+.height-bar { height: 8px; background: #304236; border-radius: 3px; overflow: hidden; }
+.height-bar.unknown { background: repeating-linear-gradient(135deg,#26372d 0px,#26372d 4px,#435047 4px,#435047 7px); }
+#height-fill { display: block; background: var(--accent); height: 100%; width: 0; }
+#height-scale { display: block; font: 8px Consolas,monospace; color: var(--muted); margin-top: 3px; }
+#height-source { color: var(--muted); flex: 1; min-width: 120px; overflow-wrap: anywhere; }
+.height-panel button { font-size: 10px; padding: 3px 7px; min-height: 27px; }
+#height-error { width: 100%; color: var(--away); }
+#height-error:empty { display: none; }
+@media (max-width: 550px) { .speed-charts { grid-template-columns: 1fr; } }
 @media (max-width: 1050px) {
   .feed-layout.with-tracking { grid-template-columns: minmax(0, 1fr); }
   .tracking-panel { border-left: 0; border-top: 1px solid var(--border); display: grid; grid-template-columns: minmax(200px, 40%) 1fr; align-items: center; gap: 6px 16px; padding: 8px 14px; }
@@ -76,7 +116,8 @@ input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; }
   .tracking-heading, .tracking-legend, .tracking-summary, #tracking-status, .tracking-note { grid-column: 2; margin: 0; }
 }
 @media (max-width: 800px) {
-  .workspace { grid-template-columns: 1fr; }
+  .workspace, .workspace.speed-on-right { grid-template-columns: 1fr; }
+  .review-column { grid-row: 2; }
   .models-panel { margin-top: 0; }
   .prediction-panel { position: static; }
   .current-prediction { padding: 12px 15px; }

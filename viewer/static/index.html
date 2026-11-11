@@ -36,7 +36,16 @@
             <div class="seek-line"><span id="elapsed">00:00:00</span><input id="seek" type="range" min="0" max="199318" value="0" step="1" aria-label="Seek video by frame"><span id="duration">02:12:52</span></div>
             <div class="transport-buttons"><div class="button-group"><button id="play" class="play-button" title="Play / pause (Space)" aria-label="Play video">▶</button><button id="back-ten" title="Back 10 seconds (Left arrow)">−10s</button><button id="forward-ten" title="Forward 10 seconds (Right arrow)">+10s</button><span class="control-divider"></span><button id="prev-frame" title="Previous frame (comma)" aria-label="Previous frame">❮│</button><button id="next-frame" title="Next frame (period)" aria-label="Next frame">│❯</button></div><div class="button-group"><label class="sr-only" for="speed">Playback speed</label><select id="speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1× speed</option><option value="1.5">1.5×</option><option value="2">2×</option></select><button id="fullscreen" title="Fullscreen video" aria-label="Fullscreen video">⛶</button></div></div>
           </div>
-          <div class="jump-bar"><label class="tracking-toggle"><input id="tracking-toggle" type="checkbox"> Tracking pitch</label><span class="muted">JUMP TO</span><button id="first-half">1st half ↗</button><button id="second-half">2nd half ↗</button><form id="frame-form"><label for="frame-input">Frame</label><input id="frame-input" type="number" min="0" max="199318" value="0" required><button type="submit" aria-label="Go to frame">→</button></form></div>
+          <div class="jump-bar"><label class="tracking-toggle"><input id="tracking-toggle" type="checkbox"> Tracking pitch</label><label class="tracking-toggle"><input id="speed-toggle" type="checkbox"> Player speed</label><label class="tracking-toggle"><input id="height-toggle" type="checkbox"> Ball height</label><button id="first-half">1st half ↗</button><button id="second-half">2nd half ↗</button><form id="frame-form"><label for="frame-input">Frame</label><input id="frame-input" type="number" min="0" max="199318" value="0" required><button type="submit" aria-label="Go to frame">→</button></form></div>
+          <div id="speed-inline-slot"><section id="speed-panel" class="speed-panel" aria-label="Synchronized player speed" hidden>
+            <div class="speed-summary"><span class="speed-title">PLAYER SPEED <small id="speed-unit">source units</small></span><span>Mean <strong id="speed-mean">—</strong></span><span>Median <strong id="speed-median">—</strong></span><span>Highest <strong id="speed-max">—</strong></span><span>Lowest <strong id="speed-min">—</strong></span><span>Total <strong id="speed-total">—</strong></span><span id="speed-coverage">Loading…</span></div>
+            <div class="speed-controls"><label>Position <select id="speed-placement"><option value="below">Below video</option><option value="right">Right of video</option></select></label><select id="speed-window" aria-label="Speed graph time window"><option value="nearby">Nearby 60 s</option><option value="match">Full match</option></select></div>
+            <div class="speed-charts"><div><span class="chart-legend"><i class="swatch home"></i>Mean <i class="swatch dead"></i>Median <i class="swatch max-speed"></i>Highest <i class="swatch min-speed"></i>Lowest</span><canvas id="speed-average-chart" role="img" aria-label="Mean, median, highest and lowest player speed timeline"></canvas></div><div><span class="chart-legend"><i class="swatch total-speed"></i>Total player speed</span><canvas id="speed-total-chart" role="img" aria-label="Total player speed timeline"></canvas></div></div>
+            <p id="speed-chart-status">Loading speed timelines…</p>
+          </section></div>
+          <section id="height-panel" class="height-panel" aria-label="Synchronized ball height" hidden>
+            <strong>Ball z <span id="height-value">— m</span></strong><div class="height-meter"><div id="height-bar" class="height-bar unknown" role="img" aria-label="Ball height unavailable"><span id="height-fill"></span></div><span id="height-scale">0–5 m</span></div><span id="height-source">ATD has no z channel.</span><button id="height-upload">Load height CSV</button><button id="height-clear" hidden>Clear</button><input id="height-file" type="file" accept=".csv,text/csv" hidden><span id="height-error" role="status"></span>
+          </section>
         </div>
         <section class="models-panel panel">
           <div class="section-heading"><div><p class="eyebrow">SIDE BY SIDE</p><h2>Model comparison <span id="model-count" class="count">0</span></h2></div><button id="upload" class="accent-button">＋ Add CSV</button><input id="file-input" type="file" accept=".csv,text/csv" multiple hidden></div>
@@ -48,12 +57,15 @@
         </section>
         <p class="keyboard-hint"><kbd>Space</kbd> play / pause <kbd>←</kbd><kbd>→</kbd> skip 10s <kbd>,</kbd><kbd>.</kbd> step one frame</p>
       </section>
+      <div class="review-column">
+      <div id="speed-side-slot" class="panel" hidden></div>
       <aside class="prediction-panel panel" aria-label="Synchronized frame predictions">
         <div class="panel-heading"><span><i class="live-dot"></i> FRAME INSPECTOR</span><span id="inspector-state">PAUSED</span></div>
         <div class="current-prediction"><div class="current-top"><p class="eyebrow">CURRENT FRAME</p><span id="frame-number">#000000</span></div><label for="primary-model" class="sr-only">Focus model</label><select id="primary-model" aria-label="Focus model" title="Focus model"></select><div id="hero" class="hero" data-label="X"><span id="hero-code" class="hero-code">—</span><div><h2 id="hero-name">Loading…</h2><p id="hero-detail">Reading model predictions</p></div></div><div class="frame-metadata"><span id="frame-time">00:00:00.000</span><span>0-based frame</span></div></div>
         <div class="history-heading"><h3>Previous 9 frames</h3><span>NEWEST FIRST ↓</span></div>
         <div class="history-scroll"><table id="history"><thead></thead><tbody></tbody></table></div>
       </aside>
+      </div>
     </div>
     <footer><span>TOUCHLINE <span class="muted">/ Possession analysis</span></span><span>BAR-ATH · H / A / D / X</span></footer>
   </main>

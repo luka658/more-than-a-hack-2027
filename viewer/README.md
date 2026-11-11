@@ -60,6 +60,35 @@ ATD or tagging files. Missing source files produce a message in the relevant pan
 and do not prevent video/prediction playback. All assets use `games.asset_paths()`
 and respect `MTAH_DATA_DIR`; a custom `--video` must match these tactical annotations.
 
+Enable **Player speed** to show the exact current-frame mean, median, highest, lowest, and sum of
+player speeds, plus the number of visible slots with valid speed. Two clickable
+timelines show mean/median/highest/lowest and total: choose a nearby 60-second window or the full
+match. Graphs average the per-frame statistics in one-second bins; the readouts
+are always the current frame. Highest/lowest curves average the per-frame maximum/minimum,
+so they are not the absolute extremes of the entire second. Missing, negative or non-finite speeds are excluded;
+no valid speeds means unavailable, not zero. Both teams are combined. The total is
+a sum of scalar speeds, not a velocity, and depends on tracking coverage.
+
+In the speed panel, choose **Position → Right of video** to stack the two graphs
+above the frame inspector, or **Below video** for the original layout. The pitch,
+inspector, Smart Tagging, ball height and model comparison remain available in either
+layout. Narrow screens stack the right column below the video.
+
+Units follow the ATD XML (`kph`, displayed as **km/h**), despite the m/s description
+in DATA.md; no conversion is guessed. The exact same aggregation helper powers
+[`starter/04_player_speed.ipynb`](../starter/04_player_speed.ipynb), which produces
+the two Matplotlib graphs using the repo's analysis libraries. Neither view uses
+ground truth, tunes a threshold, or makes a dead-ball decision.
+
+**Ball height** shows a compact z readout and bar. The supplied export has no z
+channel: Kloppy creates `ball_z` but fills it with None. The third raw ball value
+is speed. The bar therefore shows unavailable (striped), never a fabricated zero.
+To inspect a separately produced height signal, load a `frame,z` CSV: zero-based,
+strictly increasing unique frame IDs and nonnegative heights in metres. Sparse
+frames and blank/NaN/null z values are allowed; missing observations are not
+interpolated. The bar has a fixed per-file scale covering the largest height,
+rounded up to a multiple of 5 m (minimum 5 m). File data stays in the browser tab.
+
 Keyboard shortcuts, when not editing or focused on a control:
 
 | Key | Action |

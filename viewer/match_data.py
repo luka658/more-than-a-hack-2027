@@ -9,6 +9,7 @@ import xml.etree.ElementTree as ET
 
 from games import GAME, GAMES, asset_paths
 from starter.load_smart_tagging import load as load_tags
+from starter.player_speed import summarize_speeds, speed_metadata, speed_timeline
 
 CHUNK_SIZE = 500
 
@@ -35,7 +36,8 @@ def parse_frame(line, frame, slots):
         position = point(group)
         if position is not None:
             visible.append([slot["id"]] + position)
-    return {"frame": frame, "players": visible, "ball": point(ball)}
+    return {"frame": frame, "players": visible, "ball": point(ball),
+            "speed": summarize_speeds(player[3] for player in visible)}
 
 
 class MatchData:
@@ -45,6 +47,8 @@ class MatchData:
         self.frames = frames if frames is not None else GAMES[GAME]["n_video_frames"]
         self._offsets = None
         self._lock = Lock()
+        self._speed_lock = Lock()
+        self._speeds = None
 
     @lru_cache(maxsize=1)
     def events(self):
@@ -65,7 +69,19 @@ class MatchData:
         if not slots:
             raise ValueError("No player slots in ATD metadata")
         return {"slots": slots, "pitch": list(GAMES[GAME]["pitch"]),
+                "speedUnit": speed_metadata(self.paths["atd_meta"])["unit"],
+                "ballHeightAvailable": False,
                 "frames": self.frames, "chunkSize": CHUNK_SIZE}
+
+    def speeds(self):
+        with self._speed_lock:
+            if self._speeds is None:
+                meta = self.metadata()
+                self._speeds = {"unit": meta["speedUnit"], "fps": GAMES[GAME]["fps"],
+                                "frames": self.frames, "binSeconds": 1,
+                                "bins": speed_timeline(self.paths["atd_raw"], self.frames,
+                                                       len(meta["slots"]), GAMES[GAME]["fps"])}
+        return self._speeds
 
     def offsets(self):
         # Index byte positions once (~1.6 MB for the full match), not millions of objects.
