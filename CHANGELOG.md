@@ -7,6 +7,11 @@ Only record work you implemented; do not attribute someone else's changes to you
 
 Format: `- Added/Changed/Fixed/Removed <short description>. — <author>`
 
+## 2026-11-11
+
+- Made the frame inspector narrower with denser history rows and a smaller current-frame card, keeping all nine previous predictions visible. — Codex
+- Added synchronized Smart Tagging events and a toggleable ATD pitch view with team positions, ball visibility, and optional track-slot IDs; compacted the viewer layout. — Codex
+
 ## 2026-11-10
 
 - Added a local tactical video viewer with synchronized possession predictions, the previous nine frames, seeking, and frame stepping. Added model CSV loading, comparison timelines, focus-model selection, and navigation to prediction disagreements. — Codex

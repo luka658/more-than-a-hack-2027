@@ -1,8 +1,10 @@
 import { LABELS, parsePredictions, frameAtTime, historyFrames, findDisagreement, timecode } from './core.mjs';
+import { createMatchDataView } from './match-data.mjs';
 
 const $ = id => document.getElementById(id);
 const video = $('video');
 const models = [];
+const matchData = createMatchDataView();
 let config, currentFrame = 0, primary = null, nextId = 0, historyRows = [], ready = false;
 let pendingFrame = null;
 
@@ -155,6 +157,7 @@ function rebuildModels() {
 function renderFrame(frame, force = false) {
   if (!force && currentFrame === frame) return;
   currentFrame = frame;
+  matchData.update(frame);
   const time = frame / config.fps;
   $('frame-number').textContent = `#${String(frame).padStart(6, '0')}`;
   $('elapsed').textContent = timecode(time);
@@ -203,6 +206,7 @@ function seekFrame(frame, pause = false) {
 }
 function syncStatus() {
   const seeking = video.seeking;
+  matchData.setSeeking(seeking);
   $('sync-status').textContent = seeking ? 'SEEKING…' : video.paused ? 'PAUSED · FRAME SYNC' : 'PLAYING · FRAME SYNC';
   $('inspector-state').textContent = seeking ? 'SEEKING' : video.paused ? 'PAUSED' : 'PLAYING';
   $('play').textContent = video.paused ? '▶' : 'Ⅱ';
@@ -275,7 +279,7 @@ document.addEventListener('keydown', event => {
 for (const event of ['play', 'pause', 'seeking', 'seeked', 'ended']) video.addEventListener(event, syncStatus);
 video.addEventListener('seeked', () => {
   pendingFrame = null;
-  renderFrame(frameAtTime(video.currentTime, config.fps, config.frames));
+  renderFrame(frameAtTime(video.currentTime, config.fps, config.frames), true);
 });
 video.addEventListener('loadedmetadata', () => {
   ready = true;
@@ -310,6 +314,7 @@ new ResizeObserver(() => models.forEach(drawTimeline)).observe($('model-list'));
 async function init() {
   try {
     config = await fetchConfig();
+    matchData.load(config.fps);
     $('seek').max = $('frame-input').max = config.frames - 1;
     $('frame-count').textContent = `${config.frames.toLocaleString()} frames`;
     $('duration').textContent = timecode(config.frames / config.fps);

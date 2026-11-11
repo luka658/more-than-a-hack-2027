@@ -12,6 +12,7 @@ from urllib.parse import unquote, urlsplit
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from games import GAME, GAMES, anchor_video_frame, asset_paths
+from match_data import MatchData
 
 STATIC = Path(__file__).resolve().parent / "static"
 RESULTS = ROOT / "evaluation" / "results"
@@ -53,6 +54,19 @@ class Handler(BaseHTTPRequestHandler):
                 "models": files, "defaultModel": default,
                 "videoAvailable": self.server.video.is_file(),
             })
+        elif path == "/api/events" or path == "/api/tracking/meta" or path.startswith("/api/tracking/chunk/"):
+            try:
+                if path == "/api/events":
+                    data = {"events": self.server.match_data.events()}
+                elif path == "/api/tracking/meta":
+                    data = self.server.match_data.metadata()
+                else:
+                    data = self.server.match_data.chunk(int(path.rsplit("/", 1)[1]))
+                self.send_json(data)
+            except OSError:
+                self.send_json({"error": "Match data missing or unreadable. Check data/tactical/ or MTAH_DATA_DIR."}, 404)
+            except (ValueError, SyntaxError) as error:
+                self.send_json({"error": str(error)}, 422)
         elif path == "/video":
             self.send_file(self.server.video, "video/mp4")
         elif path.startswith("/api/models/"):
@@ -64,15 +78,15 @@ class Handler(BaseHTTPRequestHandler):
         else:
             # Explicit allowlist: never expose the repository or gated match assets.
             name = "index.html" if path == "/" else path.lstrip("/")
-            if name not in {"index.html", "app.mjs", "core.mjs", "styles.css"}:
+            if name not in {"index.html", "app.mjs", "core.mjs", "styles.css", "match-data.mjs"}:
                 self.send_error(404)
                 return
             mime = "text/javascript" if name.endswith(".mjs") else mimetypes.guess_type(name)[0]
             self.send_file(STATIC / name, mime or "application/octet-stream")
 
-    def send_json(self, data):
-        body = json.dumps(data).encode("utf-8")
-        self.send_response(200)
+    def send_json(self, data, status=200):
+        body = json.dumps(data, allow_nan=False, separators=(",", ":")).encode("utf-8")
+        self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
@@ -130,6 +144,7 @@ def main():
     args = parser.parse_args()
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
     server.video = args.video.resolve()
+    server.match_data = MatchData()
     print("Possession viewer: http://127.0.0.1:{}".format(args.port), flush=True)
     print("Video: {}".format(server.video), flush=True)
     try:

@@ -10,6 +10,7 @@ from urllib.request import Request, urlopen
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from server import Handler, ThreadingHTTPServer, byte_range
+from test_match_data import fixture
 
 
 class RangeTests(unittest.TestCase):
@@ -31,6 +32,7 @@ class HttpTests(unittest.TestCase):
         cls.video.write_bytes(cls.payload)
         cls.server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         cls.server.video = cls.video
+        cls.server.match_data = fixture(cls.temp.name)
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.thread.start()
         cls.url = "http://127.0.0.1:{}".format(cls.server.server_port)
@@ -57,6 +59,20 @@ class HttpTests(unittest.TestCase):
         with self.assertRaises(HTTPError) as caught:
             urlopen(Request(self.url + "/video", headers={"Range": "bytes=9999-"}))
         self.assertEqual(caught.exception.code, 416)
+        caught.exception.close()
+
+    def test_synchronized_data_routes(self):
+        for path in ["/api/events", "/api/tracking/meta", "/api/tracking/chunk/0", "/api/tracking/chunk/500"]:
+            with urlopen(self.url + path) as response:
+                self.assertEqual(response.status, 200)
+                data = json.load(response)
+                if path.endswith("/500"):
+                    self.assertEqual(data["frames"][0]["frame"], 500)
+        for path in ["/api/tracking/chunk/-1", "/api/tracking/chunk/nope", "/api/tracking/chunk/999999"]:
+            with self.assertRaises(HTTPError) as caught:
+                urlopen(self.url + path)
+            self.assertEqual(caught.exception.code, 422)
+            caught.exception.close()
 
     def test_config_static_and_private_file_isolation(self):
         with urlopen(self.url + "/api/config") as response:
@@ -72,6 +88,7 @@ class HttpTests(unittest.TestCase):
             with self.assertRaises(HTTPError) as caught:
                 urlopen(self.url + path)
             self.assertEqual(caught.exception.code, 404)
+            caught.exception.close()
 
 
 if __name__ == "__main__":

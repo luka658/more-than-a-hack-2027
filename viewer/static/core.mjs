@@ -48,3 +48,17 @@ export function timecode(seconds) {
   const total = Math.max(0, Math.floor(seconds));
   return `${String(Math.floor(total / 3600)).padStart(2, '0')}:${String(Math.floor(total / 60) % 60).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
+
+export function activeEvents(events, frame) {
+  // The loader defines half-open intervals. Recompute on seek, including backward.
+  return events.filter(event => event.start_frame <= frame && frame < event.end_frame);
+}
+
+export function trackingChunkStart(frame, size) {
+  return Math.floor(frame / size) * size;
+}
+
+export function trackingFrame(chunk, frame) {
+  const row = chunk?.frames[frame - chunk.start];
+  return row?.frame === frame ? row : null;
+}

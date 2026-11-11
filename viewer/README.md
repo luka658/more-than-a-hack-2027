@@ -38,6 +38,28 @@ kickoff anchors. It respects `MTAH_DATA_DIR`. You can also select a recording wi
   **X** model abstention. No confidence is shown because the export contains no
   probabilities.
 
+Smart Tagging appears in a compact strip directly below the video. All active phases
+are shown, including overlapping tags, with team and event type where available.
+Hover a tag for its interval and full metadata. These are automatic annotations,
+not ground truth. Intervals include their start frame and exclude their end frame.
+
+Enable **Tracking pitch** beside the jump controls to view the raw ATD on a top-down
+field, as in `02_tracking_atd.ipynb`. It follows playback, frame stepping and seeking.
+Barcelona is blue, Athletic is pink, and the ball is white, matching the viewer legend.
+The plot uses normalized field coordinates and the pitch dimensions from `games.py`.
+The display origin is at the upper-left corner, with x increasing right and y
+increasing down (a 180-degree rotation of the previous horizontally mirrored view).
+Labels remain upright and the underlying ATD coordinates stay unchanged. Missing players vanish;
+missing balls are explicitly reported. Nothing is interpolated or manually corrected.
+**Slot IDs** shows track slots, not persistent player identities or shirt numbers.
+
+Tracking is read in 500-frame chunks with bounded caches and next-chunk prefetch.
+The first request indexes the raw file once; loading and seeking clear the markers
+until data for the current frame is ready. Restart the server after replacing source
+ATD or tagging files. Missing source files produce a message in the relevant panel
+and do not prevent video/prediction playback. All assets use `games.asset_paths()`
+and respect `MTAH_DATA_DIR`; a custom `--video` must match these tactical annotations.
+
 Keyboard shortcuts, when not editing or focused on a control:
 
 | Key | Action |
@@ -73,7 +95,8 @@ python -m unittest discover -s viewer/tests -p "test_*.py"
 node --test viewer/tests/core.test.mjs
 ```
 
-The Python checks cover HTTP byte ranges, seeking responses and route isolation.
-The JavaScript checks cover CSV alignment, frame timestamps, history, disagreements,
-and loading the available repository predictions. Node is only needed for these
+The Python checks cover HTTP byte ranges, seeking responses, route isolation, ATD
+alignment, missing observations, and annotation endpoints. The JavaScript checks
+cover CSV alignment, frame timestamps, history, disagreements, event boundaries,
+tracking chunk selection, and loading the available repository predictions. Node is only needed for these
 development checks, not for running the viewer.

@@ -22,12 +22,21 @@
       <section class="watch-column" aria-label="Video and model comparison">
         <div class="video-panel panel">
           <div class="panel-heading"><span><i class="live-dot"></i> TACTICAL FEED</span><span id="sync-status">Loading video…</span></div>
-          <div class="video-stage"><video id="video" preload="metadata" playsinline aria-label="Tactical match video"></video><div class="video-tag">BAR — ATH <span>TACTICAL</span></div><button id="stage-play" class="stage-play" aria-label="Play video">▶</button><div id="video-error" class="video-error" hidden></div></div>
+          <div id="feed-layout" class="feed-layout"><div class="video-stage"><video id="video" preload="metadata" playsinline aria-label="Tactical match video"></video><div class="video-tag">BAR — ATH <span>TACTICAL</span></div><button id="stage-play" class="stage-play" aria-label="Play video">▶</button><div id="video-error" class="video-error" hidden></div></div>
+          <section id="tracking-panel" class="tracking-panel" aria-label="Synchronized tracking pitch" hidden>
+            <div class="tracking-heading"><strong>ATD / PITCH</strong><span id="tracking-frame">#000000</span></div>
+            <canvas id="tracking-canvas" role="img" aria-label="Top-down pitch showing tracked players and ball"></canvas>
+            <div class="tracking-legend"><span><i class="swatch home"></i>Barcelona</span><span><i class="swatch away"></i>Athletic</span><span><i class="swatch ball"></i>Ball</span></div>
+            <div class="tracking-summary"><span id="tracking-counts">H — · A —</span><label><input id="tracking-ids" type="checkbox"> Slot IDs</label></div>
+            <p id="tracking-status" role="status">Enable tracking to inspect</p>
+            <span class="tracking-note">Raw ATD · slots are not player identities</span>
+          </section></div>
+          <div class="event-strip" aria-label="Synchronized Smart Tagging events"><span class="event-caption">SMART TAGGING<small>Automatic phases</small></span><div id="event-list">Loading tags…</div></div>
           <div class="transport">
             <div class="seek-line"><span id="elapsed">00:00:00</span><input id="seek" type="range" min="0" max="199318" value="0" step="1" aria-label="Seek video by frame"><span id="duration">02:12:52</span></div>
             <div class="transport-buttons"><div class="button-group"><button id="play" class="play-button" title="Play / pause (Space)" aria-label="Play video">▶</button><button id="back-ten" title="Back 10 seconds (Left arrow)">−10s</button><button id="forward-ten" title="Forward 10 seconds (Right arrow)">+10s</button><span class="control-divider"></span><button id="prev-frame" title="Previous frame (comma)" aria-label="Previous frame">❮│</button><button id="next-frame" title="Next frame (period)" aria-label="Next frame">│❯</button></div><div class="button-group"><label class="sr-only" for="speed">Playback speed</label><select id="speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1× speed</option><option value="1.5">1.5×</option><option value="2">2×</option></select><button id="fullscreen" title="Fullscreen video" aria-label="Fullscreen video">⛶</button></div></div>
           </div>
-          <div class="jump-bar"><span class="muted">JUMP TO</span><button id="first-half">1st half ↗</button><button id="second-half">2nd half ↗</button><form id="frame-form"><label for="frame-input">Frame</label><input id="frame-input" type="number" min="0" max="199318" value="0" required><button type="submit" aria-label="Go to frame">→</button></form></div>
+          <div class="jump-bar"><label class="tracking-toggle"><input id="tracking-toggle" type="checkbox"> Tracking pitch</label><span class="muted">JUMP TO</span><button id="first-half">1st half ↗</button><button id="second-half">2nd half ↗</button><form id="frame-form"><label for="frame-input">Frame</label><input id="frame-input" type="number" min="0" max="199318" value="0" required><button type="submit" aria-label="Go to frame">→</button></form></div>
         </div>
         <section class="models-panel panel">
           <div class="section-heading"><div><p class="eyebrow">SIDE BY SIDE</p><h2>Model comparison <span id="model-count" class="count">0</span></h2></div><button id="upload" class="accent-button">＋ Add CSV</button><input id="file-input" type="file" accept=".csv,text/csv" multiple hidden></div>
@@ -41,10 +50,9 @@
       </section>
       <aside class="prediction-panel panel" aria-label="Synchronized frame predictions">
         <div class="panel-heading"><span><i class="live-dot"></i> FRAME INSPECTOR</span><span id="inspector-state">PAUSED</span></div>
-        <div class="current-prediction"><div class="current-top"><p class="eyebrow">CURRENT FRAME</p><span id="frame-number">#000000</span></div><label for="primary-model">Focus model</label><select id="primary-model" aria-label="Focus model"></select><div id="hero" class="hero" data-label="X"><span id="hero-code" class="hero-code">—</span><div><h2 id="hero-name">Loading…</h2><p id="hero-detail">Reading model predictions</p></div></div><div class="frame-metadata"><span id="frame-time">00:00:00.000</span><span>0-based video frame</span></div></div>
+        <div class="current-prediction"><div class="current-top"><p class="eyebrow">CURRENT FRAME</p><span id="frame-number">#000000</span></div><label for="primary-model" class="sr-only">Focus model</label><select id="primary-model" aria-label="Focus model" title="Focus model"></select><div id="hero" class="hero" data-label="X"><span id="hero-code" class="hero-code">—</span><div><h2 id="hero-name">Loading…</h2><p id="hero-detail">Reading model predictions</p></div></div><div class="frame-metadata"><span id="frame-time">00:00:00.000</span><span>0-based frame</span></div></div>
         <div class="history-heading"><h3>Previous 9 frames</h3><span>NEWEST FIRST ↓</span></div>
         <div class="history-scroll"><table id="history"><thead></thead><tbody></tbody></table></div>
-        <div class="inspector-foot"><i class="live-dot"></i><span>Predictions follow the video frame.<br>Seek anywhere to inspect that moment.</span></div>
       </aside>
     </div>
     <footer><span>TOUCHLINE <span class="muted">/ Possession analysis</span></span><span>BAR-ATH · H / A / D / X</span></footer>
